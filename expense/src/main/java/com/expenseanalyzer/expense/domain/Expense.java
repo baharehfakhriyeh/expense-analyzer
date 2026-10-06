@@ -13,6 +13,7 @@ import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 
 @Entity
 @Table(name = "expenses")
@@ -79,14 +80,14 @@ public class Expense {
 
     @PrePersist
     void onCreate() {
-        Instant now = Instant.now();
+        Instant now = Instant.now().truncatedTo(ChronoUnit.MICROS);
         createdAt = now;
         updatedAt = now;
     }
 
     @PreUpdate
     void onUpdate() {
-        updatedAt = Instant.now();
+        updatedAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
     }
 
     public Long getId() { return id; }
