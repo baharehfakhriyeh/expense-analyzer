@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -41,9 +42,24 @@ class ExpenseApiIntegrationTest {
     @Autowired
     private ExpenseRepository repository;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     @BeforeEach
     void clearDatabase() {
         repository.deleteAll();
+    }
+
+    @Test
+    void flywayMigrationRemovesCategoryIndex() {
+        Integer matchingIndexes = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM INFORMATION_SCHEMA.INDEXES
+                WHERE LOWER(TABLE_NAME) = 'expenses'
+                  AND LOWER(INDEX_NAME) = 'idx_expenses_category'
+                """, Integer.class);
+
+        assertThat(matchingIndexes).isZero();
     }
 
     @Test
