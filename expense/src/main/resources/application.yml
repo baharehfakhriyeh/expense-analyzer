@@ -21,3 +21,10 @@ server:
 
 spring.data.web.pageable:
   max-page-size: 100
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    url: /openapi.yaml
+    disable-swagger-default-url: true
+    display-request-duration: true

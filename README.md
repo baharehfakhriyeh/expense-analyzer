@@ -1,74 +1,50 @@
 # Expense Analyzer
 
-Java 21 Maven multi-module project for recording expenses. The current project contains one runnable Spring Boot module, `expense`. Authentication is intentionally not configured; `paidBy` is a numeric `long` supplied directly on create and update requests until the existing authentication module is integrated.
+Expense Analyzer is a Java 21, Spring Boot REST API for recording expenses. The Maven root is an aggregator project; the runnable `expense` module contains the API, persistence layer, Flyway migrations, and Swagger UI.
 
-## Requirements
+Authentication is not implemented. `paidBy` is currently a client-supplied positive numeric identifier and is not checked against a person table. Do not expose this application to an untrusted network until authentication and authorization are added.
 
-- JDK 21
-- Maven 3.6.3+
-- Docker Compose (for the included PostgreSQL database)
+## Quick start
 
-## Run locally
+Requirements: JDK 21, Maven 3.6.3 or later, and Docker Compose.
 
-Start PostgreSQL:
+Start PostgreSQL and the API:
 
 ```shell
 docker compose up -d postgres
-```
-
-Run the API from the project root:
-
-```shell
 mvn -pl expense spring-boot:run
 ```
 
-The API listens on `http://localhost:8080`. Flyway creates the schema on startup. Database connection settings can be overridden with `DATABASE_URL`, `DATABASE_USERNAME`, and `DATABASE_PASSWORD`; the server port can be changed with `SERVER_PORT`.
+The committed default API port is `8080`. Open Swagger UI at [`http://localhost:8080/swagger-ui.html`](http://localhost:8080/swagger-ui.html). The canonical OpenAPI contract is served at [`http://localhost:8080/openapi.yaml`](http://localhost:8080/openapi.yaml); springdoc also exposes generated API metadata at `/v3/api-docs`.
 
-To create the executable JAR:
+The port and database connection can be configured with `SERVER_PORT`, `DATABASE_URL`, `DATABASE_USERNAME`, and `DATABASE_PASSWORD`. The application applies Flyway migrations at startup and validates the resulting schema through Hibernate.
+
+Build, package, and test:
 
 ```shell
+mvn -pl expense clean test
 mvn -pl expense package
 java -jar expense/target/expense-0.1.0-SNAPSHOT.jar
 ```
 
-Run unit and integration tests:
+Integration tests use H2 and execute the Flyway migrations; they do not require Docker.
 
-```shell
-mvn -pl expense test
+## Documentation
+
+- [Architecture and request flow](docs/architecture.md)
+- [REST API guide](docs/api.md)
+- [Database model and migrations](docs/database.md)
+- [Development and operations](docs/development.md)
+- [Complete OpenAPI 3.0.3 specification](expense/src/main/resources/static/openapi.yaml)
+
+## Project layout
+
+```text
+expense-analyzer/
+├── pom.xml                         # Maven parent/aggregator; Java 21 and shared versions
+├── docs/                           # Architecture, API, database, and development guides
+└── expense/                        # Runnable Spring Boot REST API module
+    ├── src/main/java/              # API, DTOs, service, repository, and Expense entity
+    ├── src/main/resources/         # Application config, Flyway migrations, OpenAPI contract
+    └── src/test/                   # Unit and H2-backed integration tests
 ```
-
-Integration tests use an in-memory H2 database and apply the project's Flyway migration; they do not require Docker.
-
-## REST API
-
-All endpoints are under `/api/v1/expenses`.
-
-| Method | Path | Result |
-|---|---|---|
-| `POST` | `/api/v1/expenses` | Create an expense (`201 Created`) |
-| `GET` | `/api/v1/expenses` | List expenses, paginated |
-| `GET` | `/api/v1/expenses/{id}` | Retrieve one expense |
-| `PUT` | `/api/v1/expenses/{id}` | Replace an expense |
-| `DELETE` | `/api/v1/expenses/{id}` | Delete an expense (`204 No Content`) |
-
-List query parameters: `from`, `to` (ISO dates), `category`, `paidBy`, `page`, `size`, and `sort`. The maximum page size is 100.
-
-Example create request:
-
-```json
-{
-  "description": "Groceries",
-  "amount": 42.75,
-  "currency": "USD",
-  "expenseDate": "2026-10-04",
-  "category": "Food",
-  "notes": "Weekly shopping",
-  "paidBy": 1
-}
-```
-
-Amounts must be positive and support up to four decimal places. Currency is normalized to uppercase. Dates use `YYYY-MM-DD`. Error responses provide a timestamp, HTTP status, message, and optional field-level validation details.
-
-## Data model
-
-The `Expense` entity contains `id`, `description`, `amount`, `currency`, `expenseDate`, `category`, optional `notes`, `paidBy` (`long`), `createdAt`, `updatedAt`, and an optimistic-lock version. `paidBy` is deliberately a scalar ID, not a JPA relationship, so this module has no dependency on an authentication/person module.

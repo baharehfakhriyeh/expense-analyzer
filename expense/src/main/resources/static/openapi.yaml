@@ -1,0 +1,434 @@
+openapi: 3.0.3
+info:
+  title: Expense Analyzer API
+  version: 1.0.0
+  description: >-
+    REST API for creating, reading, replacing, listing, and deleting family expense
+    records. Authentication is not implemented. The caller supplies paidBy, and
+    the API does not provide user or family-level access isolation. Use only in a
+    trusted environment until authentication and authorization are added.
+  contact:
+    name: Expense Analyzer maintainers
+servers:
+  - url: /
+    description: Current application host and port
+tags:
+  - name: Expenses
+    description: Expense record operations
+paths:
+  /api/v1/expenses:
+    post:
+      tags: [Expenses]
+      operationId: createExpense
+      summary: Create an expense
+      description: Creates an expense. The client supplies the positive paidBy identifier.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpenseWriteRequest'
+            examples:
+              groceryPurchase:
+                summary: Grocery purchase
+                value:
+                  description: Weekly groceries
+                  amount: 42.75
+                  currency: usd
+                  expenseDate: '2026-10-04'
+                  category: Food
+                  notes: Weekly shop
+                  paidBy: 1
+      responses:
+        '201':
+          description: Expense created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenseResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    get:
+      tags: [Expenses]
+      operationId: listExpenses
+      summary: List expenses
+      description: >-
+        Lists expenses with optional inclusive date filters, a case-insensitive
+        exact category filter, and a paidBy filter. Pagination is zero-based.
+        Multiple sort parameters may be supplied. Supported sort properties are
+        id, description, amount, currency, expenseDate, category, paidBy,
+        createdAt, and updatedAt. Values must be provided with exact property
+        casing, for example sort=expenseDate,desc. The default sort is
+        expenseDate ascending.
+      parameters:
+        - name: from
+          in: query
+          required: false
+          description: Include expenses on or after this date (inclusive). Must not be later than `to`.
+          schema:
+            type: string
+            format: date
+          example: '2026-10-01'
+        - name: to
+          in: query
+          required: false
+          description: Include expenses on or before this date (inclusive).
+          schema:
+            type: string
+            format: date
+          example: '2026-10-31'
+        - name: category
+          in: query
+          required: false
+          description: Case-insensitive exact match after trimming.
+          schema:
+            type: string
+          example: Food
+        - name: paidBy
+          in: query
+          required: false
+          description: Filter by the caller-supplied payer identifier.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          example: 1
+        - name: page
+          in: query
+          required: false
+          description: Zero-based page index.
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          required: false
+          description: Requested page size; values above 100 are capped by the application.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: sort
+          in: query
+          required: false
+          description: >-
+            Repeatable `property,direction` sort expression. Direction is `asc`
+            or `desc`; if omitted, ascending is used. The property must be one
+            of the supported Expense fields listed in this operation's description.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+              pattern: '^(id|description|amount|currency|expenseDate|category|paidBy|createdAt|updatedAt)(,(asc|desc))?$'
+          examples:
+            newestFirst:
+              summary: Newest expenses first
+              value: ["expenseDate,desc"]
+            amountThenDate:
+              summary: Amount descending, then date ascending
+              value: ["amount,desc", "expenseDate,asc"]
+      responses:
+        '200':
+          description: A page of matching expenses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpensePage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/v1/expenses/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Expense identifier.
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+    get:
+      tags: [Expenses]
+      operationId: getExpense
+      summary: Get an expense
+      responses:
+        '200':
+          description: Expense found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenseResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Expenses]
+      operationId: replaceExpense
+      summary: Replace an expense
+      description: Replaces all writable expense fields, including paidBy.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpenseWriteRequest'
+      responses:
+        '200':
+          description: Expense replaced
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenseResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      tags: [Expenses]
+      operationId: deleteExpense
+      summary: Delete an expense
+      responses:
+        '204':
+          description: Expense deleted; response has no body
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  schemas:
+    ExpenseWriteRequest:
+      type: object
+      required:
+        - description
+        - amount
+        - currency
+        - expenseDate
+        - category
+        - paidBy
+      properties:
+        description:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Required description; leading and trailing whitespace is removed.
+          example: Weekly groceries
+        amount:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          multipleOf: 0.0001
+          maximum: 999999999999999.9999
+          description: Positive decimal, up to 15 integer digits and 4 fractional digits.
+          example: 42.75
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          pattern: '^[A-Za-z]{3}$'
+          description: Recognized ISO 4217 code; input is case-insensitive and output is uppercase.
+          example: USD
+        expenseDate:
+          type: string
+          format: date
+          description: Calendar date on which the expense occurred.
+          example: '2026-10-04'
+        category:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: Required expense category; leading and trailing whitespace is removed.
+          example: Food
+        notes:
+          type: string
+          nullable: true
+          maxLength: 2000
+          description: Optional note. Blank or whitespace-only values are stored as null.
+          example: Weekly shop
+        paidBy:
+          type: integer
+          format: int64
+          minimum: 1
+          description: >-
+            Client-supplied payer ID. There is no authentication, person lookup,
+            foreign key, or ownership enforcement at this time.
+          example: 1
+    ExpenseResponse:
+      type: object
+      required:
+        - id
+        - description
+        - amount
+        - currency
+        - expenseDate
+        - category
+        - paidBy
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 23
+        description:
+          type: string
+          maxLength: 200
+          example: Weekly groceries
+        amount:
+          type: number
+          format: double
+          example: 42.75
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: USD
+        expenseDate:
+          type: string
+          format: date
+          example: '2026-10-04'
+        category:
+          type: string
+          maxLength: 80
+          example: Food
+        notes:
+          type: string
+          nullable: true
+          maxLength: 2000
+          example: Weekly shop
+        paidBy:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        createdAt:
+          type: string
+          format: date-time
+          description: UTC creation timestamp, represented at microsecond precision.
+          example: '2026-10-04T12:30:45.123456Z'
+        updatedAt:
+          type: string
+          format: date-time
+          description: UTC last-update timestamp, represented at microsecond precision.
+          example: '2026-10-04T12:30:45.123456Z'
+    ExpensePage:
+      type: object
+      description: Spring Data Page JSON returned by the list endpoint.
+      required: [content, totalElements, totalPages, size, number, numberOfElements, first, last, empty]
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExpenseResponse'
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+          description: Requested/effective page size.
+        number:
+          type: integer
+          format: int32
+          description: Zero-based page number.
+        numberOfElements:
+          type: integer
+          format: int32
+        first:
+          type: boolean
+        last:
+          type: boolean
+        empty:
+          type: boolean
+        pageable:
+          type: object
+          description: Spring Data paging metadata; clients should prefer the top-level page fields.
+          properties:
+            pageNumber: { type: integer, format: int32 }
+            pageSize: { type: integer, format: int32 }
+            offset: { type: integer, format: int64 }
+            paged: { type: boolean }
+            unpaged: { type: boolean }
+            sort:
+              $ref: '#/components/schemas/SortMetadata'
+        sort:
+          $ref: '#/components/schemas/SortMetadata'
+    SortMetadata:
+      type: object
+      properties:
+        sorted: { type: boolean }
+        unsorted: { type: boolean }
+        empty: { type: boolean }
+    ApiError:
+      type: object
+      required: [timestamp, status, error, message, details]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-10-06T12:00:00Z'
+        status:
+          type: integer
+          format: int32
+          example: 400
+        error:
+          type: string
+          example: Bad Request
+        message:
+          type: string
+          example: Request validation failed
+        details:
+          type: object
+          description: Field name to validation message map; empty when there are no field details.
+          additionalProperties:
+            type: string
+          example:
+            amount: must be greater than 0
+  responses:
+    BadRequest:
+      description: Invalid field, malformed request, invalid filter range, or unsupported sort property.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            validationFailure:
+              value:
+                timestamp: '2026-10-06T12:00:00Z'
+                status: 400
+                error: Bad Request
+                message: Request validation failed
+                details:
+                  currency: must be a valid ISO 4217 currency code
+    NotFound:
+      description: No expense exists with the requested identifier.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            timestamp: '2026-10-06T12:00:00Z'
+            status: 404
+            error: Not Found
+            message: Expense with id 999 was not found
+            details: {}
+    Conflict:
+      description: The request conflicts with stored data constraints.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+security: []

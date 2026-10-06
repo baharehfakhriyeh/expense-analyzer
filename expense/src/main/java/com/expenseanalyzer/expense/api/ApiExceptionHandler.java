@@ -10,6 +10,8 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -31,9 +33,23 @@ public class ApiExceptionHandler {
         return error(HttpStatus.BAD_REQUEST, "Request validation failed", details);
     }
 
-    @ExceptionHandler({ConstraintViolationException.class, IllegalArgumentException.class, HttpMessageNotReadableException.class})
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ApiError> handleMethodValidation(HandlerMethodValidationException exception) {
+        Map<String, String> details = new LinkedHashMap<>();
+        exception.getParameterValidationResults().forEach(result -> {
+            String parameterName = result.getMethodParameter().getParameterName();
+            String key = parameterName == null ? "parameter" : parameterName;
+            result.getResolvableErrors().forEach(validationError ->
+                    details.putIfAbsent(key, validationError.getDefaultMessage()));
+        });
+        return error(HttpStatus.BAD_REQUEST, "Request validation failed", details);
+    }
+
+    @ExceptionHandler({ConstraintViolationException.class, IllegalArgumentException.class,
+            HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
     public ResponseEntity<ApiError> handleBadRequest(Exception exception) {
         String message = exception instanceof HttpMessageNotReadableException
+                || exception instanceof MethodArgumentTypeMismatchException
                 ? "Request body or parameter has an invalid format"
                 : exception.getMessage();
         return error(HttpStatus.BAD_REQUEST, message, Map.of());

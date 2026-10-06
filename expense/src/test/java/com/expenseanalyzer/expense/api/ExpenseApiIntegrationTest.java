@@ -175,7 +175,31 @@ class ExpenseApiIntegrationTest {
         mockMvc.perform(get(ENDPOINT).param("from", "2026-10-05").param("to", "2026-10-04"))
                 .andExpect(status().isBadRequest());
         mockMvc.perform(get(ENDPOINT).param("sort", "unknownField"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+        mockMvc.perform(get(ENDPOINT).param("from", "not-a-date"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+        mockMvc.perform(get(ENDPOINT).param("paidBy", "0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    void openApiContractAndSwaggerUiAreAvailable() throws Exception {
+        MvcResult specResult = mockMvc.perform(get("/openapi.yaml"))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertThat(specResult.getResponse().getContentAsString())
+                .contains("openapi: 3.0.3", "/api/v1/expenses", "ExpenseWriteRequest");
+
+        mockMvc.perform(get("/swagger-ui.html"))
+                .andExpect(status().is3xxRedirection());
+        mockMvc.perform(get("/swagger-ui/index.html"))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/v3/api-docs/swagger-config"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.url").value("/openapi.yaml"));
     }
 
     private long createExpense(String description, String amount, String date, String category,
