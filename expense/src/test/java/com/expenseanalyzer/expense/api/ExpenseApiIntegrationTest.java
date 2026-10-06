@@ -16,7 +16,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -120,8 +119,7 @@ class ExpenseApiIntegrationTest {
         String responseUpdatedAt = response.get("updatedAt").asText();
         Expense persisted = repository.findById(id).orElseThrow();
         assertThat(responseUpdatedAt).isNotEqualTo(originalUpdatedAt);
-        assertThat(Instant.parse(responseUpdatedAt).truncatedTo(ChronoUnit.MICROS))
-                .isEqualTo(persisted.getUpdatedAt().truncatedTo(ChronoUnit.MICROS));
+        assertThat(Instant.parse(responseUpdatedAt)).isEqualTo(persisted.getUpdatedAt());
     }
 
     @Test
