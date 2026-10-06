@@ -4,8 +4,8 @@ services:
     container_name: expense-analyzer-postgres
     environment:
       POSTGRES_DB: expense_analyzer
-      POSTGRES_USER: expense
-      POSTGRES_PASSWORD: expense
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: fkhr
     ports:
       - "5432:5432"
     volumes:

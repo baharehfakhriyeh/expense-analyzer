@@ -15,7 +15,7 @@ docker compose up -d postgres
 mvn -pl expense spring-boot:run
 ```
 
-The committed default port is `8080`; set `SERVER_PORT` to use another port. The Swagger UI is `/swagger-ui.html` and the canonical OpenAPI file is `/openapi.yaml` on that port. Flyway applies migrations on startup.
+The committed default port is `8087`; set `SERVER_PORT` to use another port. The Swagger UI is `/swagger-ui.html` and the canonical OpenAPI file is `/openapi.yaml` on that port. Flyway applies migrations on startup.
 
 To package and run the executable JAR:
 
@@ -26,12 +26,12 @@ java -jar expense/target/expense-0.1.0-SNAPSHOT.jar
 
 ## Configuration
 
-| Variable | Purpose | Default in committed configuration |
-|---|---|---|
+| Variable | Purpose | Default in committed configuration                  |
+|---|---|-----------------------------------------------------|
 | `DATABASE_URL` | JDBC URL | `jdbc:postgresql://localhost:5432/expense_analyzer` |
-| `DATABASE_USERNAME` | Database username | `expense` |
-| `DATABASE_PASSWORD` | Database password | `expense` (local Compose default) |
-| `SERVER_PORT` | HTTP port | `8080` |
+| `DATABASE_USERNAME` | Database username | `expense`                                           |
+| `DATABASE_PASSWORD` | Database password | `expense` (local Compose default)                   |
+| `SERVER_PORT` | HTTP port | `8087`                                              |
 
 Use environment-specific values outside local development; do not commit real credentials. The local Compose credentials are for development only.
 

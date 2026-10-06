@@ -3,8 +3,8 @@ spring:
     name: expense
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/expense_analyzer}
-    username: ${DATABASE_USERNAME:expense}
-    password: ${DATABASE_PASSWORD:expense}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:fkhr}
   jpa:
     open-in-view: false
     hibernate:
@@ -16,7 +16,7 @@ spring:
   flyway:
     enabled: true
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${SERVER_PORT:8087}
   shutdown: graceful
 
 spring.data.web.pageable:
