@@ -15,7 +15,7 @@ docker compose up -d postgres
 mvn -pl expense spring-boot:run
 ```
 
-The committed default API port is `8087`. Open Swagger UI at [`http://localhost:8080/swagger-ui.html`](http://localhost:8080/swagger-ui.html). The canonical OpenAPI contract is served at [`http://localhost:8080/openapi.yaml`](http://localhost:8080/openapi.yaml); springdoc also exposes generated API metadata at `/v3/api-docs`.
+The committed default API port is `8087`. Open Swagger UI at [`http://localhost:8087/swagger-ui.html`](http://localhost:8087/swagger-ui.html). The canonical OpenAPI contract is served at [`http://localhost:8087/openapi.yaml`](http://localhost:8087/openapi.yaml); springdoc also exposes generated API metadata at `/v3/api-docs`.
 
 The port and database connection can be configured with `SERVER_PORT`, `DATABASE_URL`, `DATABASE_USERNAME`, and `DATABASE_PASSWORD`. The application applies Flyway migrations at startup and validates the resulting schema through Hibernate.
 
