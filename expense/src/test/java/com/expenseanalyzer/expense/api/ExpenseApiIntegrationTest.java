@@ -1,6 +1,8 @@
 package com.expenseanalyzer.expense.api;
 
 import com.expenseanalyzer.expense.domain.Expense;
+import com.expenseanalyzer.expense.domain.Category;
+import com.expenseanalyzer.expense.repository.CategoryRepository;
 import com.expenseanalyzer.expense.repository.ExpenseRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.Instant;
+import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -42,11 +45,15 @@ class ExpenseApiIntegrationTest {
     private ExpenseRepository repository;
 
     @Autowired
+    private CategoryRepository categoryRepository;
+
+    @Autowired
     private JdbcTemplate jdbcTemplate;
 
     @BeforeEach
     void clearDatabase() {
         repository.deleteAll();
+        categoryRepository.deleteAll();
     }
 
     @Test
@@ -70,6 +77,8 @@ class ExpenseApiIntegrationTest {
                 .andExpect(jsonPath("$.id").value(id))
                 .andExpect(jsonPath("$.description").value("Groceries"))
                 .andExpect(jsonPath("$.currency").value("USD"))
+                .andExpect(jsonPath("$.categoryId").value(createCategory("Food")))
+                .andExpect(jsonPath("$.categoryName").value("food"))
                 .andExpect(jsonPath("$.paidBy").value(1));
     }
 
@@ -81,10 +90,10 @@ class ExpenseApiIntegrationTest {
                   "amount": 8.00,
                   "currency": "USD",
                   "expenseDate": "2026-10-04",
-                  "category": "Other",
+                  "categoryId": %d,
                   "paidBy": 1
                 }
-                """;
+                """.formatted(createCategory("Other"));
         MvcResult createResult = mockMvc.perform(post(ENDPOINT)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createBody))
@@ -99,10 +108,10 @@ class ExpenseApiIntegrationTest {
                   "amount": 9.00,
                   "currency": "USD",
                   "expenseDate": "2026-10-05",
-                  "category": "Other",
+                  "categoryId": %d,
                   "paidBy": 1
                 }
-                """;
+                """.formatted(createCategory("Other"));
         mockMvc.perform(put(ENDPOINT + "/{id}", id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updateBody))
@@ -121,7 +130,7 @@ class ExpenseApiIntegrationTest {
         mockMvc.perform(get(ENDPOINT)
                         .param("from", "2026-10-04")
                         .param("to", "2026-10-04")
-                        .param("category", " food ")
+                        .param("categoryId", Long.toString(createCategory("Food")))
                         .param("paidBy", "2")
                         .param("page", "0")
                         .param("size", "1"))
@@ -140,11 +149,11 @@ class ExpenseApiIntegrationTest {
                   "amount": 9.50,
                   "currency": "eur",
                   "expenseDate": "2026-10-05",
-                  "category": "Travel",
+                  "categoryId": %d,
                   "notes": null,
                   "paidBy": 2
                 }
-                """;
+                """.formatted(createCategory("Travel"));
 
         MvcResult result = mockMvc.perform(put(ENDPOINT + "/{id}", id)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -152,6 +161,8 @@ class ExpenseApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.description").value("New name"))
                 .andExpect(jsonPath("$.currency").value("EUR"))
+                .andExpect(jsonPath("$.categoryId").value(createCategory("Travel")))
+                .andExpect(jsonPath("$.categoryName").value("travel"))
                 .andReturn();
 
         JsonNode response = objectMapper.readTree(result.getResponse().getContentAsString());
@@ -180,10 +191,10 @@ class ExpenseApiIntegrationTest {
                   "amount": -1,
                   "currency": "USD",
                   "expenseDate": "2026-10-04",
-                  "category": "Food",
+                  "categoryId": %d,
                   "paidBy": 1
                 }
-                """;
+                """.formatted(createCategory("Food"));
 
         mockMvc.perform(post(ENDPOINT).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest())
@@ -199,10 +210,10 @@ class ExpenseApiIntegrationTest {
                   "amount": 1.00,
                   "currency": "ZZZ",
                   "expenseDate": "2026-10-04",
-                  "category": "Other",
+                  "categoryId": %d,
                   "paidBy": 1
                 }
-                """;
+                """.formatted(createCategory("Other"));
 
         mockMvc.perform(post(ENDPOINT).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest())
@@ -243,22 +254,30 @@ class ExpenseApiIntegrationTest {
 
     private long createExpense(String description, String amount, String date, String category,
                                String currency, long paidBy) throws Exception {
+        long categoryId = createCategory(category);
         String body = """
                 {
                   "description": "%s",
                   "amount": %s,
                   "currency": "%s",
                   "expenseDate": "%s",
-                  "category": "%s",
+                  "categoryId": %d,
                   "notes": "  note  ",
                   "paidBy": %d
                 }
-                """.formatted(description, amount, currency, date, category, paidBy);
+                """.formatted(description, amount, currency, date, categoryId, paidBy);
         MvcResult result = mockMvc.perform(post(ENDPOINT)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isCreated())
                 .andReturn();
         return objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asLong();
+    }
+
+    private long createCategory(String name) {
+        String normalizedName = name.trim().toLowerCase(Locale.ROOT);
+        Category category = categoryRepository.findByName(normalizedName)
+                .orElseGet(() -> categoryRepository.saveAndFlush(new Category(normalizedName)));
+        return category.getId();
     }
 }
