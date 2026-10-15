@@ -44,7 +44,7 @@ expense-analyzer/
 ├── pom.xml                         # Maven parent/aggregator; Java 21 and shared versions
 ├── docs/                           # Architecture, API, database, and development guides
 └── expense/                        # Runnable Spring Boot REST API module
-    ├── src/main/java/              # API, DTOs, service, repository, and Expense entity
+    ├── src/main/java/              # API, DTOs, services, repositories, Expense and Category entities
     ├── src/main/resources/         # Application config, Flyway migrations, OpenAPI contract
     └── src/test/                   # Unit and H2-backed integration tests
 ```

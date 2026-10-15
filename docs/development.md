@@ -41,7 +41,7 @@ Use environment-specific values outside local development; do not commit real cr
 mvn -pl expense clean test
 ```
 
-`ExpenseServiceTest` uses Mockito for service behavior. `ExpenseApiIntegrationTest` starts the Spring context, runs Flyway against in-memory H2, and exercises the REST API through MockMvc. The H2 compatibility mode is useful for fast integration checks but is not a substitute for validating database-specific behavior against PostgreSQL.
+`ExpenseServiceTest` and `CategoryServiceTest` use Mockito for service behavior. `ExpenseApiIntegrationTest` and `CategoryControllerIntegrationTest` exercise the REST API through MockMvc. `CategoryPersistenceIntegrationTest` verifies repository and database constraints. The integration tests start the Spring context and run Flyway against in-memory H2. The H2 compatibility mode is useful for fast integration checks but is not a substitute for validating database-specific behavior against PostgreSQL.
 
 ## Code layout
 

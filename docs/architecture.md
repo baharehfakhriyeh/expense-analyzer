@@ -21,18 +21,18 @@ flowchart LR
 flowchart LR
     Client[API client or separately maintained browser UI]
     App[Expense module<br/>Java 21 · Spring Boot MVC<br/>REST API + Swagger UI]
-    DB[(PostgreSQL<br/>expense records)]
+    DB[(PostgreSQL<br/>expense and category records)]
     Client -->|HTTP/JSON| App
     App -->|JPA / JDBC| DB
 ```
 
-The `expense` module contains the REST controllers, request/response DTOs, validation, application service, Spring Data JPA repository, and `Expense` entity. Flyway owns schema changes. Swagger UI is served by the application and loads the checked-in OpenAPI YAML contract.
+The `expense` module contains the expense and category REST controllers, request/response DTOs, validation, application services, Spring Data JPA repositories, and `Expense` and `Category` entities. An expense references one required category through `category_id`; each category can be shared by multiple expenses. Flyway owns schema changes. Swagger UI is served by the application and loads the checked-in OpenAPI YAML contract.
 
 ## Request flow
 
-1. `ExpenseController` binds the HTTP request and validates request fields.
-2. `ExpenseService` normalizes user text and currency, builds the query specification, and applies transaction boundaries.
-3. `ExpenseRepository` reads or writes `Expense` rows using Spring Data JPA.
+1. `ExpenseController` and `CategoryController` bind HTTP requests and validate request fields.
+2. `ExpenseService` resolves the submitted `categoryId`, normalizes expense text and currency, builds query specifications, and applies transaction boundaries. `CategoryService` trims and lowercases category names before saving them.
+3. `ExpenseRepository` and `CategoryRepository` read or write their entities using Spring Data JPA; the database foreign key enforces the expense-to-category relationship.
 4. `ApiExceptionHandler` formats handled validation, not-found, and database conflict errors as `ApiError` responses.
 
 ## Persistence and external dependencies
@@ -45,7 +45,7 @@ The `expense` module contains the REST controllers, request/response DTOs, valid
 ## Current boundaries
 
 - One Maven module and one deployable process.
-- One entity: `Expense`.
+- Two entities: `Expense` and `Category`.
 - No Person/Family entity, authentication, authorization, or ownership enforcement.
 - The browser UI is a separate application and is not included in this repository or backend deployment. It communicates with this service through the documented REST API.
 - No API gateway or external identity provider.
