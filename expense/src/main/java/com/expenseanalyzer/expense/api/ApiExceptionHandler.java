@@ -2,6 +2,7 @@ package com.expenseanalyzer.expense.api;
 
 import com.expenseanalyzer.expense.api.dto.ApiError;
 import com.expenseanalyzer.expense.service.ExpenseNotFoundException;
+import com.expenseanalyzer.expense.service.CategoryNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -20,8 +21,8 @@ import java.util.Map;
 @RestControllerAdvice
 public class ApiExceptionHandler {
 
-    @ExceptionHandler(ExpenseNotFoundException.class)
-    public ResponseEntity<ApiError> handleNotFound(ExpenseNotFoundException exception) {
+    @ExceptionHandler({ExpenseNotFoundException.class, CategoryNotFoundException.class})
+    public ResponseEntity<ApiError> handleNotFound(RuntimeException exception) {
         return error(HttpStatus.NOT_FOUND, exception.getMessage(), Map.of());
     }
 

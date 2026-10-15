@@ -12,7 +12,8 @@ public record ExpenseResponse(
         BigDecimal amount,
         String currency,
         LocalDate expenseDate,
-        String category,
+        Long categoryId,
+        String categoryName,
         String notes,
         long paidBy,
         Instant createdAt,
@@ -21,7 +22,8 @@ public record ExpenseResponse(
     public static ExpenseResponse from(Expense expense) {
         return new ExpenseResponse(
                 expense.getId(), expense.getDescription(), expense.getAmount(), expense.getCurrency(),
-                expense.getExpenseDate(), expense.getCategory(), expense.getNotes(), expense.getPaidBy(),
+                expense.getExpenseDate(), expense.getCategory().getId(), expense.getCategory().getName(),
+                expense.getNotes(), expense.getPaidBy(),
                 expense.getCreatedAt(), expense.getUpdatedAt()
         );
     }

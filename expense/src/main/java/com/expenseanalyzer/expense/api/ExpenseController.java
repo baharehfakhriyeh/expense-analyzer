@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 public class ExpenseController {
 
     private static final Set<String> SORTABLE_FIELDS = Set.of(
-            "id", "description", "amount", "currency", "expenseDate", "category", "paidBy", "createdAt", "updatedAt"
+            "id", "description", "amount", "currency", "expenseDate", "category.name", "paidBy", "createdAt", "updatedAt"
     );
 
     private final ExpenseService expenseService;
@@ -50,7 +50,7 @@ public class ExpenseController {
     public Page<ExpenseResponse> list(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
-            @RequestParam(required = false) String category,
+            @RequestParam(required = false) @Positive Long categoryId,
             @RequestParam(required = false) @Positive Long paidBy,
             @PageableDefault(size = 20, sort = "expenseDate") Pageable pageable
     ) {
@@ -64,7 +64,7 @@ public class ExpenseController {
         if (from != null && to != null && from.isAfter(to)) {
             throw new IllegalArgumentException("from must be on or before to");
         }
-        return expenseService.list(from, to, category, paidBy, pageable);
+        return expenseService.list(from, to, categoryId, paidBy, pageable);
     }
 
     @GetMapping("/{id}")

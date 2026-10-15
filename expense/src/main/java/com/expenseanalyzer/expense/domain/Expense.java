@@ -1,6 +1,9 @@
 package com.expenseanalyzer.expense.domain;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -35,8 +38,9 @@ public class Expense {
     @Column(name = "expense_date", nullable = false)
     private LocalDate expenseDate;
 
-    @Column(nullable = false, length = 80)
-    private String category;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category;
 
     @Column(length = 2000)
     private String notes;
@@ -57,7 +61,7 @@ public class Expense {
     }
 
     public Expense(String description, BigDecimal amount, String currency, LocalDate expenseDate,
-                   String category, String notes, long paidBy) {
+                   Category category, String notes, long paidBy) {
         this.description = description;
         this.amount = amount;
         this.currency = currency;
@@ -68,7 +72,7 @@ public class Expense {
     }
 
     public void replace(String description, BigDecimal amount, String currency, LocalDate expenseDate,
-                        String category, String notes, long paidBy) {
+                        Category category, String notes, long paidBy) {
         this.description = description;
         this.amount = amount;
         this.currency = currency;
@@ -95,7 +99,7 @@ public class Expense {
     public BigDecimal getAmount() { return amount; }
     public String getCurrency() { return currency; }
     public LocalDate getExpenseDate() { return expenseDate; }
-    public String getCategory() { return category; }
+    public Category getCategory() { return category; }
     public String getNotes() { return notes; }
     public long getPaidBy() { return paidBy; }
     public Instant getCreatedAt() { return createdAt; }

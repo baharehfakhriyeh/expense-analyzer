@@ -4,6 +4,8 @@ import com.expenseanalyzer.expense.api.dto.CreateExpenseRequest;
 import com.expenseanalyzer.expense.api.dto.ExpenseResponse;
 import com.expenseanalyzer.expense.api.dto.UpdateExpenseRequest;
 import com.expenseanalyzer.expense.domain.Expense;
+import com.expenseanalyzer.expense.domain.Category;
+import com.expenseanalyzer.expense.repository.CategoryRepository;
 import com.expenseanalyzer.expense.repository.ExpenseRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,21 +21,23 @@ import java.util.Locale;
 public class ExpenseService {
 
     private final ExpenseRepository repository;
+    private final CategoryRepository categoryRepository;
 
-    public ExpenseService(ExpenseRepository repository) {
+    public ExpenseService(ExpenseRepository repository, CategoryRepository categoryRepository) {
         this.repository = repository;
+        this.categoryRepository = categoryRepository;
     }
 
     public ExpenseResponse create(CreateExpenseRequest request) {
         Expense expense = new Expense(
                 normalizeDescription(request.description()), request.amount(), normalizeCurrency(request.currency()),
-                request.expenseDate(), request.category().trim(), normalizeNotes(request.notes()), request.paidBy()
+                request.expenseDate(), findCategory(request.categoryId()), normalizeNotes(request.notes()), request.paidBy()
         );
         return ExpenseResponse.from(repository.saveAndFlush(expense));
     }
 
     @Transactional(readOnly = true)
-    public Page<ExpenseResponse> list(LocalDate from, LocalDate to, String category, Long paidBy, Pageable pageable) {
+    public Page<ExpenseResponse> list(LocalDate from, LocalDate to, Long categoryId, Long paidBy, Pageable pageable) {
         Specification<Expense> specification = (root, query, builder) -> builder.conjunction();
         if (from != null) {
             specification = specification.and((root, query, builder) -> builder.greaterThanOrEqualTo(root.get("expenseDate"), from));
@@ -41,10 +45,9 @@ public class ExpenseService {
         if (to != null) {
             specification = specification.and((root, query, builder) -> builder.lessThanOrEqualTo(root.get("expenseDate"), to));
         }
-        if (category != null && !category.isBlank()) {
-            String normalizedCategory = category.trim().toLowerCase(Locale.ROOT);
+        if (categoryId != null) {
             specification = specification.and((root, query, builder) ->
-                    builder.equal(builder.lower(root.get("category")), normalizedCategory));
+                    builder.equal(root.get("category").get("id"), categoryId));
         }
         if (paidBy != null) {
             specification = specification.and((root, query, builder) -> builder.equal(root.get("paidBy"), paidBy));
@@ -61,7 +64,7 @@ public class ExpenseService {
         Expense expense = findExpense(id);
         expense.replace(
                 normalizeDescription(request.description()), request.amount(), normalizeCurrency(request.currency()),
-                request.expenseDate(), request.category().trim(), normalizeNotes(request.notes()), request.paidBy()
+                request.expenseDate(), findCategory(request.categoryId()), normalizeNotes(request.notes()), request.paidBy()
         );
         return ExpenseResponse.from(repository.saveAndFlush(expense));
     }
@@ -72,6 +75,10 @@ public class ExpenseService {
 
     private Expense findExpense(long id) {
         return repository.findById(id).orElseThrow(() -> new ExpenseNotFoundException(id));
+    }
+
+    private Category findCategory(long id) {
+        return categoryRepository.findById(id).orElseThrow(() -> new CategoryNotFoundException(id));
     }
 
     private String normalizeCurrency(String currency) {

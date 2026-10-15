@@ -15,7 +15,104 @@ servers:
 tags:
   - name: Expenses
     description: Expense record operations
+  - name: Categories
+    description: Expense category operations
 paths:
+  /api/v1/categories:
+    post:
+      tags: [Categories]
+      operationId: createCategory
+      summary: Create a category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryWriteRequest'
+            example:
+              name: Food
+      responses:
+        '201':
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    get:
+      tags: [Categories]
+      operationId: listCategories
+      summary: List categories
+      responses:
+        '200':
+          description: Categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryResponse'
+  /api/v1/categories/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Category identifier.
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+    get:
+      tags: [Categories]
+      operationId: getCategory
+      summary: Get a category
+      responses:
+        '200':
+          description: Category found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '404':
+          $ref: '#/components/responses/CategoryNotFound'
+    put:
+      tags: [Categories]
+      operationId: replaceCategory
+      summary: Rename a category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryWriteRequest'
+      responses:
+        '200':
+          description: Category updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/CategoryNotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      tags: [Categories]
+      operationId: deleteCategory
+      summary: Delete a category
+      description: A category referenced by any expense cannot be deleted.
+      responses:
+        '204':
+          description: Category deleted
+        '404':
+          $ref: '#/components/responses/CategoryNotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /api/v1/expenses:
     post:
       tags: [Expenses]
@@ -36,7 +133,7 @@ paths:
                   amount: 42.75
                   currency: usd
                   expenseDate: '2026-10-04'
-                  category: Food
+                  categoryId: 1
                   notes: Weekly shop
                   paidBy: 1
       responses:
@@ -55,10 +152,10 @@ paths:
       operationId: listExpenses
       summary: List expenses
       description: >-
-        Lists expenses with optional inclusive date filters, a case-insensitive
-        exact category filter, and a paidBy filter. Pagination is zero-based.
+        Lists expenses with optional inclusive date filters, a categoryId filter,
+        and a paidBy filter. Pagination is zero-based.
         Multiple sort parameters may be supplied. Supported sort properties are
-        id, description, amount, currency, expenseDate, category, paidBy,
+        id, description, amount, currency, expenseDate, category.name, paidBy,
         createdAt, and updatedAt. Values must be provided with exact property
         casing, for example sort=expenseDate,desc. The default sort is
         expenseDate ascending.
@@ -79,13 +176,15 @@ paths:
             type: string
             format: date
           example: '2026-10-31'
-        - name: category
+        - name: categoryId
           in: query
           required: false
-          description: Case-insensitive exact match after trimming.
+          description: Match expenses assigned to this category identifier.
           schema:
-            type: string
-          example: Food
+            type: integer
+            format: int64
+            minimum: 1
+          example: 1
         - name: paidBy
           in: query
           required: false
@@ -127,7 +226,7 @@ paths:
             type: array
             items:
               type: string
-              pattern: '^(id|description|amount|currency|expenseDate|category|paidBy|createdAt|updatedAt)(,(asc|desc))?$'
+              pattern: '^(id|description|amount|currency|expenseDate|category\.name|paidBy|createdAt|updatedAt)(,(asc|desc))?$'
           examples:
             newestFirst:
               summary: Newest expenses first
@@ -212,7 +311,7 @@ components:
         - amount
         - currency
         - expenseDate
-        - category
+        - categoryId
         - paidBy
       properties:
         description:
@@ -243,12 +342,12 @@ components:
           format: date
           description: Calendar date on which the expense occurred.
           example: '2026-10-04'
-        category:
-          type: string
-          minLength: 1
-          maxLength: 80
-          description: Required expense category; leading and trailing whitespace is removed.
-          example: Food
+        categoryId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Identifier of an existing category.
+          example: 1
         notes:
           type: string
           nullable: true
@@ -270,7 +369,8 @@ components:
         - amount
         - currency
         - expenseDate
-        - category
+        - categoryId
+        - categoryName
         - paidBy
         - createdAt
         - updatedAt
@@ -297,7 +397,11 @@ components:
           type: string
           format: date
           example: '2026-10-04'
-        category:
+        categoryId:
+          type: integer
+          format: int64
+          example: 1
+        categoryName:
           type: string
           maxLength: 80
           example: Food
@@ -366,6 +470,28 @@ components:
               $ref: '#/components/schemas/SortMetadata'
         sort:
           $ref: '#/components/schemas/SortMetadata'
+    CategoryWriteRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: Required category name; leading and trailing whitespace is removed.
+          example: Food
+    CategoryResponse:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          maxLength: 80
+          example: Food
     SortMetadata:
       type: object
       properties:
@@ -424,6 +550,18 @@ components:
             status: 404
             error: Not Found
             message: Expense with id 999 was not found
+            details: {}
+    CategoryNotFound:
+      description: No category exists with the requested identifier.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            timestamp: '2026-10-06T12:00:00Z'
+            status: 404
+            error: Not Found
+            message: Category with id 999 was not found
             details: {}
     Conflict:
       description: The request conflicts with stored data constraints.

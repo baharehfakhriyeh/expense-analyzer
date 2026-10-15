@@ -16,7 +16,7 @@ public record UpdateExpenseRequest(
         @NotNull @Positive @Digits(integer = 15, fraction = 4) BigDecimal amount,
         @NotBlank @Size(min = 3, max = 3) @IsoCurrency String currency,
         @NotNull LocalDate expenseDate,
-        @NotBlank @Size(max = 80) String category,
+        @NotNull @Positive Long categoryId,
         @Size(max = 2000) String notes,
         @NotNull @Positive Long paidBy
 ) {
