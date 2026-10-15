@@ -7,7 +7,7 @@ The `Expense` entity maps to PostgreSQL table `expenses`.
 | Column | Type | Nullability / constraints | Description |
 |---|---|---|---|
 | `id` | `BIGINT` identity | Primary key | Generated expense identifier |
-| `description` | `VARCHAR(200)` | Required | Expense description |
+| `description` | `VARCHAR(200)` | Optional | Expense description |
 | `amount` | `NUMERIC(19,4)` | Required, greater than zero | Monetary amount |
 | `currency` | `VARCHAR(3)` | Required | Uppercase ISO 4217 code at application level |
 | `expense_date` | `DATE` | Required | Date the expense occurred |
@@ -30,6 +30,7 @@ Flyway migrations are append-only and versioned in `expense/src/main/resources/d
 
 - `V1__create_expenses.sql` creates the table and initial indexes.
 - `V2__drop_category_index.sql` drops the category index without rewriting the applied V1 migration.
+- `V3__allow_null_expense_description.sql` allows descriptions to be null.
 
 Do not edit a migration that has been applied to a shared database. Add a new migration for subsequent schema changes. Hibernate uses `ddl-auto: validate`; Flyway, not Hibernate schema generation, changes the runtime schema.
 

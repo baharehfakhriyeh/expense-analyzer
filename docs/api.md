@@ -33,7 +33,7 @@ The list response is Spring Data's paged JSON representation. It contains `conte
 
 Create and replacement requests provide `description`, `amount`, `currency`, `expenseDate`, `category`, `notes`, and `paidBy`.
 
-- `description`: required, trimmed, 1–200 characters.
+- `description`: optional and nullable; when priovided, it is trmmed, must contain a non-whitespace character, and may be up to 200 characters.
 - `amount`: required positive decimal, at most 15 integer digits and 4 fractional digits.
 - `currency`: required recognized ISO 4217 code, case-insensitive on input and uppercase in responses.
 - `expenseDate`: required calendar date.

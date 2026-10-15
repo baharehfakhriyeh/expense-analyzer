@@ -74,6 +74,45 @@ class ExpenseApiIntegrationTest {
     }
 
     @Test
+    void createAndUpdateExpenseWithNullDescription() throws Exception {
+        String createBody = """
+                {
+                  "description": null,
+                  "amount": 8.00,
+                  "currency": "USD",
+                  "expenseDate": "2026-10-04",
+                  "category": "Other",
+                  "paidBy": 1
+                }
+                """;
+        MvcResult createResult = mockMvc.perform(post(ENDPOINT)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.description").doesNotExist())
+                .andReturn();
+        long id = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asLong();
+
+        String updateBody = """
+                {
+                  "description": null,
+                  "amount": 9.00,
+                  "currency": "USD",
+                  "expenseDate": "2026-10-05",
+                  "category": "Other",
+                  "paidBy": 1
+                }
+                """;
+        mockMvc.perform(put(ENDPOINT + "/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.description").doesNotExist());
+
+        assertThat(repository.findById(id).orElseThrow().getDescription()).isNull();
+    }
+
+    @Test
     void listFiltersByDateCategoryAndPaidByAndPaginates() throws Exception {
         createExpense("Market", "20.00", "2026-10-03", "Food", "USD", 1);
         createExpense("Fuel", "50.00", "2026-10-04", "Transport", "USD", 1);

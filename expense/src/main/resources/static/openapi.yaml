@@ -209,7 +209,6 @@ components:
     ExpenseWriteRequest:
       type: object
       required:
-        - description
         - amount
         - currency
         - expenseDate
@@ -218,9 +217,10 @@ components:
       properties:
         description:
           type: string
+          nullable: true
           minLength: 1
           maxLength: 200
-          description: Required description; leading and trailing whitespace is removed.
+          description: Optional description; leading and trailing whitespace is removed.
           example: Weekly groceries
         amount:
           type: number
@@ -267,7 +267,6 @@ components:
       type: object
       required:
         - id
-        - description
         - amount
         - currency
         - expenseDate
@@ -282,6 +281,7 @@ components:
           example: 23
         description:
           type: string
+          nullable: true
           maxLength: 200
           example: Weekly groceries
         amount:

@@ -64,4 +64,4 @@ mvn -pl expense clean test
 
 ## Current operational limitations
 
-The app has no authentication or authorization. `paidBy` comes from the client and does not scope access. The API is not safe for untrusted network exposure until authentication and ownership checks are implemented. There is no React frontend, API gateway, or production deployment configuration yet.
+The API has no authentication or authorization. `paidBy` comes from the client and does not scope access. The API is not safe for untrusted network exposure until authentication and ownership checks are implemented. A separately maintained browser UI can connect to this service through the REST API; run this API before using the UI and configure the UI to target the API host and port. UI-specific setup belongs to that application's own documentation. There is no API gateway or production deployment configuration yet.

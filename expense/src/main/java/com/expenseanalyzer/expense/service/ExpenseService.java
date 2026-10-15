@@ -26,7 +26,7 @@ public class ExpenseService {
 
     public ExpenseResponse create(CreateExpenseRequest request) {
         Expense expense = new Expense(
-                request.description().trim(), request.amount(), normalizeCurrency(request.currency()),
+                normalizeDescription(request.description()), request.amount(), normalizeCurrency(request.currency()),
                 request.expenseDate(), request.category().trim(), normalizeNotes(request.notes()), request.paidBy()
         );
         return ExpenseResponse.from(repository.saveAndFlush(expense));
@@ -60,7 +60,7 @@ public class ExpenseService {
     public ExpenseResponse update(long id, UpdateExpenseRequest request) {
         Expense expense = findExpense(id);
         expense.replace(
-                request.description().trim(), request.amount(), normalizeCurrency(request.currency()),
+                normalizeDescription(request.description()), request.amount(), normalizeCurrency(request.currency()),
                 request.expenseDate(), request.category().trim(), normalizeNotes(request.notes()), request.paidBy()
         );
         return ExpenseResponse.from(repository.saveAndFlush(expense));
@@ -76,6 +76,10 @@ public class ExpenseService {
 
     private String normalizeCurrency(String currency) {
         return currency.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private String normalizeDescription(String description) {
+        return description == null ? null : description.trim();
     }
 
     private String normalizeNotes(String notes) {

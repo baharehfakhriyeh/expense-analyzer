@@ -23,7 +23,7 @@ public class Expense {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 200)
+    @Column(length = 200)
     private String description;
 
     @Column(nullable = false, precision = 19, scale = 4)
