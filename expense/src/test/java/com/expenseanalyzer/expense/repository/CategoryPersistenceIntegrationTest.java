@@ -69,7 +69,7 @@ class CategoryPersistenceIntegrationTest {
         Category category = categoryRepository.saveAndFlush(new Category("food"));
         expenseRepository.saveAndFlush(new Expense(
                 "Lunch", new BigDecimal("12.50"), "USD", LocalDate.parse("2026-10-15"),
-                category, null, 1L
+                category, null, 1L, false
         ));
 
         assertThatThrownBy(() -> jdbcTemplate.update(

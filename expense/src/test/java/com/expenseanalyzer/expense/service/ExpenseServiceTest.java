@@ -42,7 +42,7 @@ class ExpenseServiceTest {
         when(categoryRepository.findById(10L)).thenReturn(Optional.of(new Category("food")));
         CreateExpenseRequest request = new CreateExpenseRequest(
                 "  Groceries  ", new BigDecimal("42.7500"), " usd ", LocalDate.parse("2026-10-04"),
-                10L, "  Weekly shop  ", 7L
+                10L, "  Weekly shop  ", 7L, true
         );
 
         ExpenseResponse response = service.create(request);
@@ -55,6 +55,7 @@ class ExpenseServiceTest {
         assertThat(saved.getCategory().getName()).isEqualTo("food");
         assertThat(saved.getNotes()).isEqualTo("Weekly shop");
         assertThat(saved.getPaidBy()).isEqualTo(7L);
+        assertThat(response.isPersonal()).isTrue();
         assertThat(response.amount()).isEqualByComparingTo("42.7500");
     }
 
@@ -72,12 +73,12 @@ class ExpenseServiceTest {
         Category updatedCategory = new Category("travel");
         when(categoryRepository.findById(12L)).thenReturn(Optional.of(updatedCategory));
         Expense expense = new Expense("Old", new BigDecimal("1.00"), "USD", LocalDate.parse("2026-01-01"),
-                new Category("other"), null, 1L);
+                new Category("other"), null, 1L, false);
         when(repository.findById(3L)).thenReturn(Optional.of(expense));
         when(repository.saveAndFlush(expense)).thenReturn(expense);
         UpdateExpenseRequest request = new UpdateExpenseRequest(
                 "  New  ", new BigDecimal("19.99"), "eur", LocalDate.parse("2026-02-03"),
-                12L, " ", 4L
+                12L, " ", 4L, true
         );
 
         ExpenseResponse response = service.update(3L, request);
@@ -88,13 +89,14 @@ class ExpenseServiceTest {
         assertThat(response.categoryName()).isEqualTo("travel");
         assertThat(response.notes()).isNull();
         assertThat(response.paidBy()).isEqualTo(4L);
+        assertThat(response.isPersonal()).isTrue();
         verify(repository).saveAndFlush(expense);
     }
 
     @Test
     void deleteRemovesExistingExpense() {
         Expense expense = new Expense("Meal", new BigDecimal("12.00"), "USD", LocalDate.now(),
-                new Category("food"), null, 2L);
+                new Category("food"), null, 2L, false);
         when(repository.findById(5L)).thenReturn(Optional.of(expense));
 
         service.delete(5L);

@@ -79,7 +79,8 @@ class ExpenseApiIntegrationTest {
                 .andExpect(jsonPath("$.currency").value("USD"))
                 .andExpect(jsonPath("$.categoryId").value(createCategory("Food")))
                 .andExpect(jsonPath("$.categoryName").value("food"))
-                .andExpect(jsonPath("$.paidBy").value(1));
+                .andExpect(jsonPath("$.paidBy").value(1))
+                .andExpect(jsonPath("$.isPersonal").value(false));
     }
 
     @Test
@@ -91,7 +92,8 @@ class ExpenseApiIntegrationTest {
                   "currency": "USD",
                   "expenseDate": "2026-10-04",
                   "categoryId": %d,
-                  "paidBy": 1
+                  "paidBy": 1,
+                  "isPersonal": false
                 }
                 """.formatted(createCategory("Other"));
         MvcResult createResult = mockMvc.perform(post(ENDPOINT)
@@ -109,14 +111,16 @@ class ExpenseApiIntegrationTest {
                   "currency": "USD",
                   "expenseDate": "2026-10-05",
                   "categoryId": %d,
-                  "paidBy": 1
+                  "paidBy": 1,
+                  "isPersonal": true
                 }
                 """.formatted(createCategory("Other"));
         mockMvc.perform(put(ENDPOINT + "/{id}", id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updateBody))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.description").doesNotExist());
+                .andExpect(jsonPath("$.description").doesNotExist())
+                .andExpect(jsonPath("$.isPersonal").value(true));
 
         assertThat(repository.findById(id).orElseThrow().getDescription()).isNull();
     }
@@ -151,7 +155,8 @@ class ExpenseApiIntegrationTest {
                   "expenseDate": "2026-10-05",
                   "categoryId": %d,
                   "notes": null,
-                  "paidBy": 2
+                  "paidBy": 2,
+                  "isPersonal": true
                 }
                 """.formatted(createCategory("Travel"));
 
@@ -163,6 +168,7 @@ class ExpenseApiIntegrationTest {
                 .andExpect(jsonPath("$.currency").value("EUR"))
                 .andExpect(jsonPath("$.categoryId").value(createCategory("Travel")))
                 .andExpect(jsonPath("$.categoryName").value("travel"))
+                .andExpect(jsonPath("$.isPersonal").value(true))
                 .andReturn();
 
         JsonNode response = objectMapper.readTree(result.getResponse().getContentAsString());
@@ -192,7 +198,8 @@ class ExpenseApiIntegrationTest {
                   "currency": "USD",
                   "expenseDate": "2026-10-04",
                   "categoryId": %d,
-                  "paidBy": 1
+                  "paidBy": 1,
+                  "isPersonal": false
                 }
                 """.formatted(createCategory("Food"));
 
@@ -200,6 +207,44 @@ class ExpenseApiIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.details.description").exists())
                 .andExpect(jsonPath("$.details.amount").exists());
+    }
+
+    @Test
+    void createAndReplaceRequirePersonalFlag() throws Exception {
+        String createBody = """
+                {
+                  "description": "Groceries",
+                  "amount": 8.00,
+                  "currency": "USD",
+                  "expenseDate": "2026-10-04",
+                  "categoryId": %d,
+                  "paidBy": 1
+                }
+                """.formatted(createCategory("Food"));
+
+        mockMvc.perform(post(ENDPOINT)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+
+        long id = createExpense("Existing", "9.00", "2026-10-04", "Food", "USD", 1);
+        String updateBody = """
+                {
+                  "description": "Replacement",
+                  "amount": 10.00,
+                  "currency": "USD",
+                  "expenseDate": "2026-10-05",
+                  "categoryId": %d,
+                  "paidBy": 1
+                }
+                """.formatted(createCategory("Food"));
+
+        mockMvc.perform(put(ENDPOINT + "/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
     }
 
     @Test
@@ -211,7 +256,8 @@ class ExpenseApiIntegrationTest {
                   "currency": "ZZZ",
                   "expenseDate": "2026-10-04",
                   "categoryId": %d,
-                  "paidBy": 1
+                  "paidBy": 1,
+                  "isPersonal": false
                 }
                 """.formatted(createCategory("Other"));
 
@@ -263,7 +309,8 @@ class ExpenseApiIntegrationTest {
                   "expenseDate": "%s",
                   "categoryId": %d,
                   "notes": "  note  ",
-                  "paidBy": %d
+                  "paidBy": %d,
+                  "isPersonal": false
                 }
                 """.formatted(description, amount, currency, date, categoryId, paidBy);
         MvcResult result = mockMvc.perform(post(ENDPOINT)

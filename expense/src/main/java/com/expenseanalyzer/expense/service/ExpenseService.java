@@ -39,7 +39,8 @@ public class ExpenseService {
     public ExpenseResponse create(CreateExpenseRequest request) {
         Expense expense = new Expense(
                 normalizeDescription(request.description()), request.amount(), normalizeCurrency(request.currency()),
-                request.expenseDate(), findCategory(request.categoryId()), normalizeNotes(request.notes()), request.paidBy()
+                request.expenseDate(), findCategory(request.categoryId()), normalizeNotes(request.notes()),
+                request.paidBy(), request.isPersonal()
         );
         return ExpenseResponse.from(repository.saveAndFlush(expense));
     }
@@ -99,7 +100,8 @@ public class ExpenseService {
         Expense expense = findExpense(id);
         expense.replace(
                 normalizeDescription(request.description()), request.amount(), normalizeCurrency(request.currency()),
-                request.expenseDate(), findCategory(request.categoryId()), normalizeNotes(request.notes()), request.paidBy()
+                request.expenseDate(), findCategory(request.categoryId()), normalizeNotes(request.notes()),
+                request.paidBy(), request.isPersonal()
         );
         return ExpenseResponse.from(repository.saveAndFlush(expense));
     }

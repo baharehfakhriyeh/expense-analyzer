@@ -1,0 +1,2 @@
+ALTER TABLE expenses
+    ADD COLUMN is_personal BOOLEAN NOT NULL DEFAULT FALSE;

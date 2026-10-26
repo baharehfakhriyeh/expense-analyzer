@@ -1,5 +1,6 @@
 package com.expenseanalyzer.expense.api.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -18,6 +19,7 @@ public record UpdateExpenseRequest(
         @NotNull LocalDate expenseDate,
         @NotNull @Positive Long categoryId,
         @Size(max = 2000) String notes,
-        @NotNull @Positive Long paidBy
+        @NotNull @Positive Long paidBy,
+        @JsonProperty("isPersonal") @NotNull Boolean isPersonal
 ) {
 }

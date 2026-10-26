@@ -39,7 +39,7 @@ The list response is Spring Data's paged JSON representation. It contains `conte
 
 ## Expense fields and validation
 
-Create and replacement requests provide `description`, `amount`, `currency`, `expenseDate`, `categoryId`, `notes`, and `paidBy`.
+Create and replacement requests provide `description`, `amount`, `currency`, `expenseDate`, `categoryId`, `notes`, `paidBy`, and `isPersonal`.
 
 - `description`: optional and nullable; when provided, it is trimmed, must contain a non-whitespace character, and may be up to 200 characters.
 - `amount`: required positive decimal, at most 15 integer digits and 4 fractional digits.
@@ -48,8 +48,11 @@ Create and replacement requests provide `description`, `amount`, `currency`, `ex
 - `categoryId`: required positive identifier of an existing category.
 - `notes`: optional, at most 2,000 characters; blank notes are stored as null.
 - `paidBy`: required positive 64-bit integer. Authentication is not present, so the caller supplies this value.
+- `isPersonal`: required boolean in both create and replacement requests; `true` marks an expense as personal and not shared. The API rejects requests that omit it. The UI defaults new expenses to `false` (shared).
 
-Responses also include a generated `id`, `createdAt`, and `updatedAt`. Timestamps are normalized to microsecond precision to match PostgreSQL storage. The internal optimistic-lock version is not exposed.
+Responses also include a generated `id`, `createdAt`, `updatedAt`, and `isPersonal`. Timestamps are normalized to microsecond precision to match PostgreSQL storage. The internal optimistic-lock version is not exposed.
+
+Flyway migration `V5__add_personal_expense_flag.sql` initializes existing database rows as shared (`is_personal = false`) and gives the database column a `false` default. This database default does not make the API request field optional.
 
 Expense responses also include `categoryId` and `categoryName`. Category names are trimmed and converted to lowercase before storage. Names are unique after normalization, and each expense must reference an existing category.
 

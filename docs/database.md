@@ -14,6 +14,7 @@ The `Expense` entity maps to PostgreSQL table `expenses`.
 | `category_id` | `BIGINT` | Required, foreign key to `categories.id` | Category assigned to the expense |
 | `notes` | `VARCHAR(2000)` | Optional | Additional details |
 | `paid_by` | `BIGINT` | Required, greater than zero | External/person identifier; deliberately no foreign key |
+| `is_personal` | `BOOLEAN` | Required, database default `FALSE` | Whether the expense is personal and not shared; V5 marks pre-existing rows as shared |
 | `created_at` | `TIMESTAMP WITH TIME ZONE` | Required, immutable in the entity | Creation timestamp |
 | `updated_at` | `TIMESTAMP WITH TIME ZONE` | Required | Last update timestamp |
 | `version` | `BIGINT` | Required, default `0` | JPA optimistic-lock version |
@@ -45,6 +46,7 @@ Flyway migrations are append-only and versioned in `expense/src/main/resources/d
 - `V2__drop_category_index.sql` drops the category index without rewriting the applied V1 migration.
 - `V3__allow_null_expense_description.sql` allows descriptions to be null.
 - `V4__add_categories.sql` creates `categories`, replaces the expense category text column with a required foreign key, and adds the category ID index and name constraint. It assumes the expense table is empty when applied because existing category text values are not migrated.
+- `V5__add_personal_expense_flag.sql` adds `is_personal`, initializes existing rows to `FALSE` (shared), and sets a database default of `FALSE`. The REST API still requires `isPersonal` explicitly in create and replacement requests.
 
 Do not edit a migration that has been applied to a shared database. Add a new migration for subsequent schema changes. Hibernate uses `ddl-auto: validate`; Flyway, not Hibernate schema generation, changes the runtime schema.
 

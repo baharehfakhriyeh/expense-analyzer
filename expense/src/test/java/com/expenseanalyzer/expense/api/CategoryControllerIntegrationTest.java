@@ -91,7 +91,8 @@ class CategoryControllerIntegrationTest {
                   "currency": "USD",
                   "expenseDate": "2026-10-15",
                   "categoryId": %d,
-                  "paidBy": 1
+                  "paidBy": 1,
+                  "isPersonal": false
                 }
                 """.formatted(categoryId);
         MvcResult expenseResult = mockMvc.perform(post(EXPENSES_ENDPOINT)
@@ -161,7 +162,8 @@ class CategoryControllerIntegrationTest {
                   "currency": "USD",
                   "expenseDate": "2026-10-15",
                   "categoryId": 999,
-                  "paidBy": 1
+                  "paidBy": 1,
+                  "isPersonal": false
                 }
                 """;
 

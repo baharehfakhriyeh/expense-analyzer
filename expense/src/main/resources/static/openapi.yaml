@@ -136,6 +136,7 @@ paths:
                   categoryId: 1
                   notes: Weekly shop
                   paidBy: 1
+                  isPersonal: false
       responses:
         '201':
           description: Expense created
@@ -348,6 +349,7 @@ components:
         - expenseDate
         - categoryId
         - paidBy
+        - isPersonal
       properties:
         description:
           type: string
@@ -397,6 +399,12 @@ components:
             Client-supplied payer ID. There is no authentication, person lookup,
             foreign key, or ownership enforcement at this time.
           example: 1
+        isPersonal:
+          type: boolean
+          description: >-
+            Required in create and replacement requests. True when the expense is
+            personal and not shared; the API does not default an omitted field.
+          example: false
     ExpenseResponse:
       type: object
       required:
@@ -407,6 +415,7 @@ components:
         - categoryId
         - categoryName
         - paidBy
+        - isPersonal
         - createdAt
         - updatedAt
       properties:
@@ -450,6 +459,10 @@ components:
           format: int64
           minimum: 1
           example: 1
+        isPersonal:
+          type: boolean
+          description: True when the expense is personal and not shared.
+          example: false
         createdAt:
           type: string
           format: date-time

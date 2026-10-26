@@ -48,6 +48,9 @@ public class Expense {
     @Column(name = "paid_by", nullable = false)
     private long paidBy;
 
+    @Column(name = "is_personal", nullable = false)
+    private boolean personal;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -61,7 +64,7 @@ public class Expense {
     }
 
     public Expense(String description, BigDecimal amount, String currency, LocalDate expenseDate,
-                   Category category, String notes, long paidBy) {
+                   Category category, String notes, long paidBy, boolean isPersonal) {
         this.description = description;
         this.amount = amount;
         this.currency = currency;
@@ -69,10 +72,11 @@ public class Expense {
         this.category = category;
         this.notes = notes;
         this.paidBy = paidBy;
+        this.personal = isPersonal;
     }
 
     public void replace(String description, BigDecimal amount, String currency, LocalDate expenseDate,
-                        Category category, String notes, long paidBy) {
+                        Category category, String notes, long paidBy, boolean isPersonal) {
         this.description = description;
         this.amount = amount;
         this.currency = currency;
@@ -80,6 +84,7 @@ public class Expense {
         this.category = category;
         this.notes = notes;
         this.paidBy = paidBy;
+        this.personal = isPersonal;
     }
 
     @PrePersist
@@ -102,6 +107,7 @@ public class Expense {
     public Category getCategory() { return category; }
     public String getNotes() { return notes; }
     public long getPaidBy() { return paidBy; }
+    public boolean isPersonal() { return personal; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
     public long getVersion() { return version; }
