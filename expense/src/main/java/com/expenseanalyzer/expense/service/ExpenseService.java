@@ -67,28 +67,40 @@ public class ExpenseService {
     @Transactional(readOnly = true)
     public ExpenseSummaryResponse summary(LocalDate from, LocalDate to) {
         Map<String, SummaryAccumulator> totalByCurrency = new LinkedHashMap<>();
-        Map<Long, Map<String, SummaryAccumulator>> totalsByPayer = new LinkedHashMap<>();
+        Map<String, SummaryAccumulator> sharedByCurrency = new LinkedHashMap<>();
+        Map<String, SummaryAccumulator> personalByCurrency = new LinkedHashMap<>();
+        Map<Long, PayerSummaryAccumulator> totalsByPayer = new LinkedHashMap<>();
 
         for (ExpenseSummaryRow row : repository.summarizeByPayerAndCurrency(from, to)) {
             totalByCurrency.computeIfAbsent(row.currency(), ignored -> new SummaryAccumulator())
                     .add(row.amount(), row.expenseCount());
-            totalsByPayer.computeIfAbsent(row.paidBy(), ignored -> new LinkedHashMap<>())
-                    .computeIfAbsent(row.currency(), ignored -> new SummaryAccumulator())
+            Map<String, SummaryAccumulator> bucketByCurrency = row.isPersonal()
+                    ? personalByCurrency
+                    : sharedByCurrency;
+            bucketByCurrency.computeIfAbsent(row.currency(), ignored -> new SummaryAccumulator())
                     .add(row.amount(), row.expenseCount());
+            totalsByPayer.computeIfAbsent(row.paidBy(), ignored -> new PayerSummaryAccumulator())
+                    .add(row, row.isPersonal());
         }
 
-        List<CurrencyExpenseTotal> totals = totalByCurrency.entrySet().stream()
-                .map(entry -> entry.getValue().toDto(entry.getKey()))
-                .toList();
+        List<CurrencyExpenseTotal> totals = toTotals(totalByCurrency);
+        List<CurrencyExpenseTotal> sharedTotals = toTotals(sharedByCurrency);
+        List<CurrencyExpenseTotal> personalTotals = toTotals(personalByCurrency);
         List<PayerExpenseSummary> payers = totalsByPayer.entrySet().stream()
                 .map(entry -> new PayerExpenseSummary(
                         entry.getKey(),
-                        entry.getValue().entrySet().stream()
-                                .map(currencyTotal -> currencyTotal.getValue().toDto(currencyTotal.getKey()))
-                                .toList()
+                        toTotals(entry.getValue().totals),
+                        toTotals(entry.getValue().sharedTotals),
+                        toTotals(entry.getValue().personalTotals)
                 ))
                 .toList();
-        return new ExpenseSummaryResponse(totals, payers);
+        return new ExpenseSummaryResponse(totals, sharedTotals, personalTotals, payers);
+    }
+
+    private List<CurrencyExpenseTotal> toTotals(Map<String, SummaryAccumulator> totalsByCurrency) {
+        return totalsByCurrency.entrySet().stream()
+                .map(entry -> entry.getValue().toDto(entry.getKey()))
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -141,6 +153,20 @@ public class ExpenseService {
 
         private CurrencyExpenseTotal toDto(String currency) {
             return new CurrencyExpenseTotal(currency, amount, expenseCount);
+        }
+    }
+
+    private static final class PayerSummaryAccumulator {
+        private final Map<String, SummaryAccumulator> totals = new LinkedHashMap<>();
+        private final Map<String, SummaryAccumulator> sharedTotals = new LinkedHashMap<>();
+        private final Map<String, SummaryAccumulator> personalTotals = new LinkedHashMap<>();
+
+        private void add(ExpenseSummaryRow row, boolean personal) {
+            totals.computeIfAbsent(row.currency(), ignored -> new SummaryAccumulator())
+                    .add(row.amount(), row.expenseCount());
+            Map<String, SummaryAccumulator> bucket = personal ? personalTotals : sharedTotals;
+            bucket.computeIfAbsent(row.currency(), ignored -> new SummaryAccumulator())
+                    .add(row.amount(), row.expenseCount());
         }
     }
 }

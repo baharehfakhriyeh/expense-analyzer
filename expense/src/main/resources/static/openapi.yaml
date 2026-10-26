@@ -248,11 +248,13 @@ paths:
     get:
       tags: [Expenses]
       operationId: summarizeExpenses
-      summary: Summarize expenses by currency and payer
+      summary: Summarize shared and personal expenses by currency and payer
       description: >-
-        Returns full-dataset totals grouped by currency and by payer/currency.
-        Amounts from different currencies are not combined. Payers are numeric
-        client-supplied IDs and appear only when they have matching expenses.
+        Returns shared, personal, and combined totals grouped by currency and
+        by payer/currency. Shared includes isPersonal false; personal includes
+        isPersonal true. Amounts from different currencies are not combined.
+        Payers are numeric client-supplied IDs and appear only when they have
+        matching expenses.
       parameters:
         - name: from
           in: query
@@ -520,21 +522,31 @@ components:
           $ref: '#/components/schemas/SortMetadata'
     ExpenseSummaryResponse:
       type: object
-      required: [totals, payers]
+      required: [totals, sharedTotals, personalTotals, payers]
       properties:
         totals:
           type: array
-          description: Overall amounts grouped by currency.
+          description: Combined overall amounts grouped by currency.
+          items:
+            $ref: '#/components/schemas/CurrencyExpenseTotal'
+        sharedTotals:
+          type: array
+          description: Overall amounts for expenses where isPersonal is false, grouped by currency.
+          items:
+            $ref: '#/components/schemas/CurrencyExpenseTotal'
+        personalTotals:
+          type: array
+          description: Overall amounts for expenses where isPersonal is true, grouped by currency.
           items:
             $ref: '#/components/schemas/CurrencyExpenseTotal'
         payers:
           type: array
-          description: Payers found in the selected expenses, each with currency-specific totals.
+          description: Payers found in the selected expenses, each with combined, shared, and personal currency totals.
           items:
             $ref: '#/components/schemas/PayerExpenseSummary'
     PayerExpenseSummary:
       type: object
-      required: [paidBy, totals]
+      required: [paidBy, totals, sharedTotals, personalTotals]
       properties:
         paidBy:
           type: integer
@@ -542,6 +554,17 @@ components:
           minimum: 1
         totals:
           type: array
+          description: Combined amounts for this payer grouped by currency.
+          items:
+            $ref: '#/components/schemas/CurrencyExpenseTotal'
+        sharedTotals:
+          type: array
+          description: Shared amounts for this payer grouped by currency.
+          items:
+            $ref: '#/components/schemas/CurrencyExpenseTotal'
+        personalTotals:
+          type: array
+          description: Personal amounts for this payer grouped by currency.
           items:
             $ref: '#/components/schemas/CurrencyExpenseTotal'
     CurrencyExpenseTotal:

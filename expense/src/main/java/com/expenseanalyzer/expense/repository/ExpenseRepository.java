@@ -13,13 +13,14 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>, JpaSpec
 
     @Query("""
             select new com.expenseanalyzer.expense.repository.ExpenseSummaryRow(
-                expense.paidBy, expense.currency, sum(expense.amount), count(expense.id)
+                expense.paidBy, expense.currency, expense.personal,
+                sum(expense.amount), count(expense.id)
             )
             from Expense expense
             where (:from is null or expense.expenseDate >= :from)
               and (:to is null or expense.expenseDate <= :to)
-            group by expense.paidBy, expense.currency
-            order by expense.paidBy, expense.currency
+            group by expense.paidBy, expense.currency, expense.personal
+            order by expense.paidBy, expense.currency, expense.personal
             """)
     List<ExpenseSummaryRow> summarizeByPayerAndCurrency(
             @Param("from") LocalDate from,

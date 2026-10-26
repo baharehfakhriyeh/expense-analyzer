@@ -144,6 +144,36 @@ class ExpenseApiIntegrationTest {
     }
 
     @Test
+    void summarySeparatesSharedPersonalAndTotalByCurrencyAndPayer() throws Exception {
+        createExpense("Shared one", "10.00", "2026-10-04", "Food", "USD", 1, false);
+        createExpense("Personal one", "3.00", "2026-10-04", "Food", "USD", 1, true);
+        createExpense("Shared euro", "4.00", "2026-10-04", "Travel", "EUR", 1, false);
+        createExpense("Personal two", "7.00", "2026-10-04", "Food", "USD", 2, true);
+
+        mockMvc.perform(get(ENDPOINT + "/summary")
+                        .param("from", "2026-10-04")
+                        .param("to", "2026-10-04"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totals[0].currency").value("EUR"))
+                .andExpect(jsonPath("$.totals[0].amount").value(4.0))
+                .andExpect(jsonPath("$.totals[1].currency").value("USD"))
+                .andExpect(jsonPath("$.totals[1].amount").value(20.0))
+                .andExpect(jsonPath("$.sharedTotals[0].amount").value(4.0))
+                .andExpect(jsonPath("$.sharedTotals[1].amount").value(10.0))
+                .andExpect(jsonPath("$.personalTotals").value(org.hamcrest.Matchers.hasSize(1)))
+                .andExpect(jsonPath("$.personalTotals[0].currency").value("USD"))
+                .andExpect(jsonPath("$.personalTotals[0].amount").value(10.0))
+                .andExpect(jsonPath("$.payers", org.hamcrest.Matchers.hasSize(2)))
+                .andExpect(jsonPath("$.payers[0].paidBy").value(1))
+                .andExpect(jsonPath("$.payers[0].totals[1].amount").value(13.0))
+                .andExpect(jsonPath("$.payers[0].sharedTotals[0].amount").value(4.0))
+                .andExpect(jsonPath("$.payers[0].sharedTotals[1].amount").value(10.0))
+                .andExpect(jsonPath("$.payers[0].personalTotals[0].amount").value(3.0))
+                .andExpect(jsonPath("$.payers[1].paidBy").value(2))
+                .andExpect(jsonPath("$.payers[1].personalTotals[0].amount").value(7.0));
+    }
+
+    @Test
     void updateReturnsPersistedUpdatedTimestamp() throws Exception {
         long id = createExpense("Old name", "8.00", "2026-10-04", "Other", "USD", 1);
         String originalUpdatedAt = repository.findById(id).orElseThrow().getUpdatedAt().toString();
@@ -300,6 +330,11 @@ class ExpenseApiIntegrationTest {
 
     private long createExpense(String description, String amount, String date, String category,
                                String currency, long paidBy) throws Exception {
+        return createExpense(description, amount, date, category, currency, paidBy, false);
+    }
+
+    private long createExpense(String description, String amount, String date, String category,
+                               String currency, long paidBy, boolean isPersonal) throws Exception {
         long categoryId = createCategory(category);
         String body = """
                 {
@@ -310,9 +345,9 @@ class ExpenseApiIntegrationTest {
                   "categoryId": %d,
                   "notes": "  note  ",
                   "paidBy": %d,
-                  "isPersonal": false
+                  "isPersonal": %s
                 }
-                """.formatted(description, amount, currency, date, categoryId, paidBy);
+                """.formatted(description, amount, currency, date, categoryId, paidBy, isPersonal);
         MvcResult result = mockMvc.perform(post(ENDPOINT)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
