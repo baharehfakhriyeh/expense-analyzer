@@ -2,11 +2,15 @@ package com.expenseanalyzer.expense.service;
 
 import com.expenseanalyzer.expense.api.dto.CreateExpenseRequest;
 import com.expenseanalyzer.expense.api.dto.ExpenseResponse;
+import com.expenseanalyzer.expense.api.dto.ExpenseSummaryResponse;
+import com.expenseanalyzer.expense.api.dto.CurrencyExpenseTotal;
+import com.expenseanalyzer.expense.api.dto.PayerExpenseSummary;
 import com.expenseanalyzer.expense.api.dto.UpdateExpenseRequest;
 import com.expenseanalyzer.expense.domain.Expense;
 import com.expenseanalyzer.expense.domain.Category;
 import com.expenseanalyzer.expense.repository.CategoryRepository;
 import com.expenseanalyzer.expense.repository.ExpenseRepository;
+import com.expenseanalyzer.expense.repository.ExpenseSummaryRow;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -14,6 +18,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.math.BigDecimal;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 
 @Service
@@ -56,6 +64,33 @@ public class ExpenseService {
     }
 
     @Transactional(readOnly = true)
+    public ExpenseSummaryResponse summary(LocalDate from, LocalDate to) {
+        Map<String, SummaryAccumulator> totalByCurrency = new LinkedHashMap<>();
+        Map<Long, Map<String, SummaryAccumulator>> totalsByPayer = new LinkedHashMap<>();
+
+        for (ExpenseSummaryRow row : repository.summarizeByPayerAndCurrency(from, to)) {
+            totalByCurrency.computeIfAbsent(row.currency(), ignored -> new SummaryAccumulator())
+                    .add(row.amount(), row.expenseCount());
+            totalsByPayer.computeIfAbsent(row.paidBy(), ignored -> new LinkedHashMap<>())
+                    .computeIfAbsent(row.currency(), ignored -> new SummaryAccumulator())
+                    .add(row.amount(), row.expenseCount());
+        }
+
+        List<CurrencyExpenseTotal> totals = totalByCurrency.entrySet().stream()
+                .map(entry -> entry.getValue().toDto(entry.getKey()))
+                .toList();
+        List<PayerExpenseSummary> payers = totalsByPayer.entrySet().stream()
+                .map(entry -> new PayerExpenseSummary(
+                        entry.getKey(),
+                        entry.getValue().entrySet().stream()
+                                .map(currencyTotal -> currencyTotal.getValue().toDto(currencyTotal.getKey()))
+                                .toList()
+                ))
+                .toList();
+        return new ExpenseSummaryResponse(totals, payers);
+    }
+
+    @Transactional(readOnly = true)
     public ExpenseResponse get(long id) {
         return ExpenseResponse.from(findExpense(id));
     }
@@ -91,5 +126,19 @@ public class ExpenseService {
 
     private String normalizeNotes(String notes) {
         return notes == null || notes.isBlank() ? null : notes.trim();
+    }
+
+    private static final class SummaryAccumulator {
+        private BigDecimal amount = BigDecimal.ZERO;
+        private long expenseCount;
+
+        private void add(BigDecimal amount, long expenseCount) {
+            this.amount = this.amount.add(amount);
+            this.expenseCount += expenseCount;
+        }
+
+        private CurrencyExpenseTotal toDto(String currency) {
+            return new CurrencyExpenseTotal(currency, amount, expenseCount);
+        }
     }
 }

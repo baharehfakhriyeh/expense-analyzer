@@ -243,6 +243,41 @@ paths:
                 $ref: '#/components/schemas/ExpensePage'
         '400':
           $ref: '#/components/responses/BadRequest'
+  /api/v1/expenses/summary:
+    get:
+      tags: [Expenses]
+      operationId: summarizeExpenses
+      summary: Summarize expenses by currency and payer
+      description: >-
+        Returns full-dataset totals grouped by currency and by payer/currency.
+        Amounts from different currencies are not combined. Payers are numeric
+        client-supplied IDs and appear only when they have matching expenses.
+      parameters:
+        - name: from
+          in: query
+          required: false
+          description: Include expenses on or after this date (inclusive). Must not be later than `to`.
+          schema:
+            type: string
+            format: date
+          example: '2026-10-01'
+        - name: to
+          in: query
+          required: false
+          description: Include expenses on or before this date (inclusive).
+          schema:
+            type: string
+            format: date
+          example: '2026-10-31'
+      responses:
+        '200':
+          description: Expense totals for the selected date range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenseSummaryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
   /api/v1/expenses/{id}:
     parameters:
       - name: id
@@ -470,6 +505,49 @@ components:
               $ref: '#/components/schemas/SortMetadata'
         sort:
           $ref: '#/components/schemas/SortMetadata'
+    ExpenseSummaryResponse:
+      type: object
+      required: [totals, payers]
+      properties:
+        totals:
+          type: array
+          description: Overall amounts grouped by currency.
+          items:
+            $ref: '#/components/schemas/CurrencyExpenseTotal'
+        payers:
+          type: array
+          description: Payers found in the selected expenses, each with currency-specific totals.
+          items:
+            $ref: '#/components/schemas/PayerExpenseSummary'
+    PayerExpenseSummary:
+      type: object
+      required: [paidBy, totals]
+      properties:
+        paidBy:
+          type: integer
+          format: int64
+          minimum: 1
+        totals:
+          type: array
+          items:
+            $ref: '#/components/schemas/CurrencyExpenseTotal'
+    CurrencyExpenseTotal:
+      type: object
+      required: [currency, amount, expenseCount]
+      properties:
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: USD
+        amount:
+          type: number
+          format: double
+          example: 120.50
+        expenseCount:
+          type: integer
+          format: int64
+          example: 4
     CategoryWriteRequest:
       type: object
       required: [name]

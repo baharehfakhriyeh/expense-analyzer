@@ -17,6 +17,7 @@ The API prefix is `/api/v1`. Expense endpoints are under `/api/v1/expenses`, and
 | `DELETE` | `/api/v1/categories/{id}` | `204 No Content` | Delete an unused category |
 | `POST` | `/api/v1/expenses` | `201 Created` + `ExpenseResponse` | Create an expense |
 | `GET` | `/api/v1/expenses` | `200 OK` + paged expenses | List/filter expenses |
+| `GET` | `/api/v1/expenses/summary` | `200 OK` + `ExpenseSummaryResponse` | Aggregate totals by currency and payer |
 | `GET` | `/api/v1/expenses/{id}` | `200 OK` + `ExpenseResponse` | Retrieve one expense |
 | `PUT` | `/api/v1/expenses/{id}` | `200 OK` + `ExpenseResponse` | Replace an expense |
 | `DELETE` | `/api/v1/expenses/{id}` | `204 No Content` | Delete an expense |
@@ -33,6 +34,8 @@ The API prefix is `/api/v1`. Expense endpoints are under `/api/v1/expenses`, and
 - `sort`: repeatable `property,direction` value, for example `sort=expenseDate,desc`. Supported properties are `id`, `description`, `amount`, `currency`, `expenseDate`, `category.name`, `paidBy`, `createdAt`, and `updatedAt`. The default is `expenseDate` ascending.
 
 The list response is Spring Data's paged JSON representation. It contains `content`, page and sort metadata, and total element/page counts. Clients should use the documented fields rather than depending on internal framework-only fields in `pageable`.
+
+`GET /api/v1/expenses/summary` accepts the same optional inclusive `from` and `to` date bounds. It returns totals grouped by currency and totals grouped by payer and currency across all matching expenses; it is not paginated. Payers are returned only when they have matching expenses. Amounts in different currencies are never combined. The `paidBy` value is a client-supplied numeric identifier, not a resolved user record.
 
 ## Expense fields and validation
 

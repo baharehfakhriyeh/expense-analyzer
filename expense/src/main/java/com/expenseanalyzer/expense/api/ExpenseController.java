@@ -2,6 +2,7 @@ package com.expenseanalyzer.expense.api;
 
 import com.expenseanalyzer.expense.api.dto.CreateExpenseRequest;
 import com.expenseanalyzer.expense.api.dto.ExpenseResponse;
+import com.expenseanalyzer.expense.api.dto.ExpenseSummaryResponse;
 import com.expenseanalyzer.expense.api.dto.UpdateExpenseRequest;
 import com.expenseanalyzer.expense.service.ExpenseService;
 import jakarta.validation.Valid;
@@ -65,6 +66,17 @@ public class ExpenseController {
             throw new IllegalArgumentException("from must be on or before to");
         }
         return expenseService.list(from, to, categoryId, paidBy, pageable);
+    }
+
+    @GetMapping("/summary")
+    public ExpenseSummaryResponse summary(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
+    ) {
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new IllegalArgumentException("from must be on or before to");
+        }
+        return expenseService.summary(from, to);
     }
 
     @GetMapping("/{id}")
